@@ -11,9 +11,9 @@ from vist import VIST
 
 
 class VistDataset(data.Dataset):
-    def __init__(self, image_dir, sis_path, vocab, transform=None):
+    def __init__(self, image_dir, sis_path, dii_path, vocab, transform=None):
         self.image_dir = image_dir
-        self.vist = VIST(sis_path)
+        self.vist = VIST(sis_path, dii_path)
         self.ids = list(self.vist.stories.keys())
         self.vocab = vocab
         self.transform = transform
@@ -68,18 +68,25 @@ class VistDataset(data.Dataset):
     def __len__(self):
         return len(self.ids)
 
-    def GetItem(self, index):
+    def GetItem(self, index): # this function is for visualizing
         vist = self.vist
         vocab = self.vocab
         story_id = self.ids[index]
 
-        targets = []
+        targets = [] # GT tensor
         images = []
         photo_sequence = []
         album_ids = []
+        #added by sison
+        descriptions = []
+        phototags = []
+        phototitles = [] 
+        GT= []
+        originalGT = []
 
         story = vist.stories[story_id]
         image_formats = ['.jpg', '.gif', '.png', '.bmp']
+        
         for annotation in story:
             storylet_id = annotation["storylet_id"]
             image = Image.new('RGB', (256, 256))
@@ -91,6 +98,7 @@ class VistDataset(data.Dataset):
                     image = Image.open(os.path.join(self.image_dir, image_id + image_format)).convert('RGB')
                     break
                 except Exception:
+                    print('image exception occurred!', self.image_dir, image_id)
                     continue
 
             if self.transform is not None:
@@ -99,6 +107,8 @@ class VistDataset(data.Dataset):
             images.append(image)
 
             text = annotation["text"]
+            og_text = annotation["original_text"]
+            
             tokens = []
             try:
                 tokens = nltk.tokenize.word_tokenize(text.lower())
@@ -112,7 +122,22 @@ class VistDataset(data.Dataset):
             target = torch.Tensor(caption)
             targets.append(target)
 
-        return images, targets, photo_sequence, album_ids
+            GT.append(text)
+            originalGT.append(og_text)
+            
+        for photoid in photo_sequence:
+            photoinfo_dict=vist.images[photoid]
+            photodesc_dict=vist.descs
+
+            phototags.append(photoinfo_dict['tags'])
+            phototitles.append(photoinfo_dict['title'])
+            descriptions.append(photodesc_dict[photoid])
+            
+        gift_ = descriptions, phototags, phototitles, GT, originalGT
+        keys = 'descs', 'tags', 'titles', 'GTs', 'ogGTs'
+        gift = dict(zip(keys,gift_))
+        return images, targets, photo_sequence, album_ids, gift
+               
 
     def GetLength(self):
         return len(self.ids)

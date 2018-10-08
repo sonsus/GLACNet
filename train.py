@@ -160,9 +160,9 @@ if __name__ == '__main__':
                         help='size for input images')
     parser.add_argument('--vocab_path', type=str, default='./models/vocab.pkl',
                         help='path for vocabulary wrapper')
-    parser.add_argument('--train_image_dir', type=str, default='./data/train' ,
+    parser.add_argument('--train_image_dir', type=str, default='./data/images/train' ,
                         help='directory for resized train images')
-    parser.add_argument('--val_image_dir', type=str, default='./data/val' ,
+    parser.add_argument('--val_image_dir', type=str, default='./data/images/val' ,
                         help='directory for resized val images')
     parser.add_argument('--train_sis_path', type=str,
                         default='./data/sis/train.story-in-sequence.json',
